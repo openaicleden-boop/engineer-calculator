@@ -614,6 +614,12 @@
             // Обработка ввода с клавиатуры
             useEffect(() => {
                 const handleKeyPress = (event) => {
+                    // Проверяем, что фокус НЕ на input или textarea
+                    const activeElement = document.activeElement;
+                    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+                        return; // Не перехватываем ввод, если фокус на input
+                    }
+
                     const key = event.key;
                     
                     // Цифры и точка
@@ -673,7 +679,7 @@
 
                 window.addEventListener('keydown', handleKeyPress);
                 return () => window.removeEventListener('keydown', handleKeyPress);
-            }, []);
+            }, [expression, mode]);
 
             const buttons = [
                 ['sin(', 'cos(', 'tan(', 'π', 'e'],
