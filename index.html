@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Инженерный Калькулятор</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.2.0/math.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #121820;
+            --bg-tertiary: #1a2332;
+            --accent-cyan: #00d4ff;
+            --accent-yellow: #ffd900;
+            --accent-orange: #ff6b35;
+            --text-primary: #e8edf3;
+            --text-secondary: #8a9fb5;
+            --border: #2a3f5f;
+            --grid: #1a2842;
+            --shadow: rgba(0, 212, 255, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(var(--grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: -1px -1px;
+        }
+
+        .app-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-yellow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -2px;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.4));
+            }
+            50% {
+                filter: drop-shadow(0 0 40px rgba(0, 212, 255, 0.6));
+            }
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 300;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 2rem;
+            animation: slideIn 0.8s ease-out 0.2s backwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .panel {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-yellow), var(--accent-orange));
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .panel-title::before {
+            content: '▸';
+            color: var(--accent-yellow);
+            font-size: 1.5rem;
+        }
+
+        .display {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .display::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(0, 212, 255, 0.05) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .expression {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            word-break: break-all;
+            min-height: 24px;
+        }
+
+        .result {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            text-align: right;
+            word-break: break-all;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .input-section {
+            margin-bottom: 1.5rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            padding: 0.8rem 1rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px var(--shadow);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.7rem;
+        }
+
+        button {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            opacity: 0.2;
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease;
+        }
+
+        button:hover::before {
+            width: 200%;
+            height: 200%;
+        }
+
+        button:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-operator {
+            background: linear-gradient(135deg, #1a3a52, #2a4a62);
+            border-color: var(--accent-yellow);
+        }
+
+        .btn-operator:hover {
+            border-color: var(--accent-yellow);
+        }
+
+        .btn-function {
+            background: linear-gradient(135deg, #2a1a42, #3a2a52);
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #4a1a1a, #5a2a2a);
+            border-color: var(--accent-orange);
+        }
+
+        .btn-clear:hover {
+            border-color: var(--accent-orange);
+        }
+
+        .btn-equals {
+            background: linear-gradient(135deg, #1a4a3a, #2a5a4a);
+            border-color: var(--accent-cyan);
+            grid-column: span 2;
+        }
+
+        .graph-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        input[type="number"] {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px var(--shadow);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .history-panel {
+            grid-column: span 2;
+            margin-top: 1rem;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.8rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            border-color: var(--accent-cyan);
+            transform: translateX(5px);
+        }
+
+        .history-expression {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .history-result {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            padding: 0.8rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--accent-cyan), #0099cc);
+            border-color: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .tab:hover:not(.active) {
+            border-color: var(--accent-cyan);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-cyan);
+            border-radius: 4px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .history-panel {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .button-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .graph-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function EngineerCalculator() {
+            const [expression, setExpression] = useState('');
+            const [result, setResult] = useState('0');
+            const [history, setHistory] = useState([]);
+            const [mode, setMode] = useState('deg');
+            const [graphFunction, setGraphFunction] = useState('sin(x)');
+            const [xMin, setXMin] = useState(-10);
+            const [xMax, setXMax] = useState(10);
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            const handleButtonClick = (value) => {
+                if (value === 'C') {
+                    setExpression('');
+                    setResult('0');
+                } else if (value === '=') {
+                    calculateResult();
+                } else if (value === '⌫') {
+                    setExpression(prev => prev.slice(0, -1));
+                } else if (value === 'π') {
+                    setExpression(prev => prev + 'pi');
+                } else if (value === 'e') {
+                    setExpression(prev => prev + 'e');
+                } else {
+                    setExpression(prev => prev + value);
+                }
+            };
+
+            const calculateResult = () => {
+                try {
+                    let expr = expression.replace(/×/g, '*').replace(/÷/g, '/');
+                    
+                    if (mode === 'deg') {
+                        expr = expr.replace(/sin\(/g, 'sin((pi/180)*');
+                        expr = expr.replace(/cos\(/g, 'cos((pi/180)*');
+                        expr = expr.replace(/tan\(/g, 'tan((pi/180)*');
+                    }
+
+                    const calculated = math.evaluate(expr);
+                    const resultValue = typeof calculated === 'number' 
+                        ? calculated.toFixed(10).replace(/\.?0+$/, '') 
+                        : calculated.toString();
+                    
+                    setResult(resultValue);
+                    setHistory(prev => [{
+                        expression: expression,
+                        result: resultValue,
+                        timestamp: new Date().toLocaleTimeString()
+                    }, ...prev.slice(0, 9)]);
+                } catch (error) {
+                    setResult('Ошибка');
+                }
+            };
+
+            const plotGraph = () => {
+                try {
+                    const xValues = [];
+                    const yValues = [];
+                    const step = (xMax - xMin) / 200;
+
+                    for (let x = xMin; x <= xMax; x += step) {
+                        try {
+                            let expr = graphFunction.replace(/x/g, `(${x})`);
+                            
+                            if (mode === 'deg') {
+                                expr = expr.replace(/sin\(/g, 'sin((pi/180)*');
+                                expr = expr.replace(/cos\(/g, 'cos((pi/180)*');
+                                expr = expr.replace(/tan\(/g, 'tan((pi/180)*');
+                            }
+
+                            const y = math.evaluate(expr);
+                            if (isFinite(y) && Math.abs(y) < 1e6) {
+                                xValues.push(x);
+                                yValues.push(y);
+                            }
+                        } catch (e) {
+                            continue;
+                        }
+                    }
+
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+
+                    const ctx = chartRef.current.getContext('2d');
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: xValues,
+                            datasets: [{
+                                label: `f(x) = ${graphFunction}`,
+                                data: yValues,
+                                borderColor: '#00d4ff',
+                                backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                                borderWidth: 3,
+                                pointRadius: 0,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: '#e8edf3',
+                                        font: {
+                                            family: 'JetBrains Mono',
+                                            size: 12
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'linear',
+                                    ticks: {
+                                        color: '#8a9fb5',
+                                        font: {
+                                            family: 'JetBrains Mono'
+                                        }
+                                    },
+                                    grid: {
+                                        color: '#2a3f5f'
+                                    }
+                                },
+                                y: {
+                                    ticks: {
+                                        color: '#8a9fb5',
+                                        font: {
+                                            family: 'JetBrains Mono'
+                                        }
+                                    },
+                                    grid: {
+                                        color: '#2a3f5f'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error('График не может быть построен:', error);
+                }
+            };
+
+            useEffect(() => {
+                plotGraph();
+            }, [graphFunction, xMin, xMax, mode]);
+
+            const buttons = [
+                ['sin(', 'cos(', 'tan(', 'π', 'e'],
+                ['√(', '^', '(', ')', 'log('],
+                ['7', '8', '9', '÷', 'ln('],
+                ['4', '5', '6', '×', 'abs('],
+                ['1', '2', '3', '-', 'exp('],
+                ['0', '.', '⌫', '+', 'C'],
+            ];
+
+            return (
+                <div className="app-container">
+                    <header>
+                        <h1>EngiCalc</h1>
+                        <div className="subtitle">Advanced Engineering Calculator</div>
+                    </header>
+
+                    <div className="main-grid">
+                        <div className="panel">
+                            <div className="panel-title">Калькулятор</div>
+                            
+                            <div className="mode-tabs">
+                                <div 
+                                    className={`tab ${mode === 'deg' ? 'active' : ''}`}
+                                    onClick={() => setMode('deg')}
+                                >
+                                    DEG
+                                </div>
+                                <div 
+                                    className={`tab ${mode === 'rad' ? 'active' : ''}`}
+                                    onClick={() => setMode('rad')}
+                                >
+                                    RAD
+                                </div>
+                            </div>
+
+                            <div className="display">
+                                <div className="expression">{expression || 'Введите выражение...'}</div>
+                                <div className="result">{result}</div>
+                            </div>
+
+                            <div className="button-grid">
+                                {buttons.map((row, i) => (
+                                    row.map((btn, j) => (
+                                        <button
+                                            key={`${i}-${j}`}
+                                            onClick={() => handleButtonClick(btn)}
+                                            className={
+                                                ['+', '-', '×', '÷'].includes(btn) ? 'btn-operator' :
+                                                btn === 'C' ? 'btn-clear' :
+                                                btn === '=' ? 'btn-equals' :
+                                                ['sin(', 'cos(', 'tan(', 'log(', 'ln(', 'abs(', 'exp(', '√('].includes(btn) ? 'btn-function' :
+                                                ''
+                                            }
+                                        >
+                                            {btn}
+                                        </button>
+                                    ))
+                                ))}
+                                <button 
+                                    onClick={() => handleButtonClick('=')}
+                                    className="btn-equals"
+                                >
+                                    =
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="panel">
+                            <div className="panel-title">Графики функций</div>
+                            
+                            <div className="input-section">
+                                <label>Функция f(x)</label>
+                                <input
+                                    type="text"
+                                    value={graphFunction}
+                                    onChange={(e) => setGraphFunction(e.target.value)}
+                                    placeholder="Например: sin(x), x^2, log(x)"
+                                />
+                            </div>
+
+                            <div className="graph-controls">
+                                <div className="input-group">
+                                    <label>X min</label>
+                                    <input
+                                        type="number"
+                                        value={xMin}
+                                        onChange={(e) => setXMin(Number(e.target.value))}
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>X max</label>
+                                    <input
+                                        type="number"
+                                        value={xMax}
+                                        onChange={(e) => setXMax(Number(e.target.value))}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="chart-container">
+                                <canvas ref={chartRef}></canvas>
+                            </div>
+                        </div>
+
+                        <div className="panel history-panel">
+                            <div className="panel-title">История вычислений</div>
+                            <div className="history-list">
+                                {history.length === 0 ? (
+                                    <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
+                                        История пуста
+                                    </div>
+                                ) : (
+                                    history.map((item, index) => (
+                                        <div 
+                                            key={index} 
+                                            className="history-item"
+                                            onClick={() => {
+                                                setExpression(item.expression);
+                                                setResult(item.result);
+                                            }}
+                                        >
+                                            <span className="history-expression">{item.expression}</span>
+                                            <span className="history-result">= {item.result}</span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<EngineerCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
