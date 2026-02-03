@@ -611,6 +611,70 @@
                 plotGraph();
             }, [graphFunction, xMin, xMax, mode]);
 
+            // Обработка ввода с клавиатуры
+            useEffect(() => {
+                const handleKeyPress = (event) => {
+                    const key = event.key;
+                    
+                    // Цифры и точка
+                    if (/^[0-9.]$/.test(key)) {
+                        event.preventDefault();
+                        setExpression(prev => prev + key);
+                    }
+                    // Операторы
+                    else if (key === '+' || key === '-') {
+                        event.preventDefault();
+                        setExpression(prev => prev + key);
+                    }
+                    else if (key === '*') {
+                        event.preventDefault();
+                        setExpression(prev => prev + '×');
+                    }
+                    else if (key === '/') {
+                        event.preventDefault();
+                        setExpression(prev => prev + '÷');
+                    }
+                    // Скобки
+                    else if (key === '(' || key === ')') {
+                        event.preventDefault();
+                        setExpression(prev => prev + key);
+                    }
+                    // Backspace
+                    else if (key === 'Backspace') {
+                        event.preventDefault();
+                        setExpression(prev => prev.slice(0, -1));
+                    }
+                    // Enter для вычисления
+                    else if (key === 'Enter' || key === '=') {
+                        event.preventDefault();
+                        calculateResult();
+                    }
+                    // Escape для очистки
+                    else if (key === 'Escape' || key.toLowerCase() === 'c') {
+                        event.preventDefault();
+                        setExpression('');
+                        setResult('0');
+                    }
+                    // Степень
+                    else if (key === '^') {
+                        event.preventDefault();
+                        setExpression(prev => prev + '^');
+                    }
+                    // Специальные функции через буквы
+                    else if (key.toLowerCase() === 'p') {
+                        event.preventDefault();
+                        setExpression(prev => prev + 'pi');
+                    }
+                    else if (key.toLowerCase() === 'e' && !event.ctrlKey && !event.metaKey) {
+                        event.preventDefault();
+                        setExpression(prev => prev + 'e');
+                    }
+                };
+
+                window.addEventListener('keydown', handleKeyPress);
+                return () => window.removeEventListener('keydown', handleKeyPress);
+            }, []);
+
             const buttons = [
                 ['sin(', 'cos(', 'tan(', 'π', 'e'],
                 ['√(', '^', '(', ')', 'log('],
